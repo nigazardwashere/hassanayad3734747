@@ -1,1 +1,454 @@
-# hassanayad3734747
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Network & Security Scanner</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
+            transition: transform 0.2s;
+        }
+        .container:hover {
+            transform: translateY(-5px);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        input[type="text"], textarea {
+            padding: 12px;
+            width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        textarea { min-height: 120px; resize: vertical; }
+        input[type="text"]:focus, textarea:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52,152,219,0.3);
+            outline: none;
+        }
+        input[type="file"] {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            border-radius: 8px;
+            background: #fff;
+        }
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #2196F3, #3f51b5);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 10px;
+            animation: fadeIn 0.5s ease-in;
+        }
+        .success {
+            background: linear-gradient(45deg, #43A047, #66BB6A);
+            color: white;
+            border: none;
+        }
+        .error {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+        }
+        .loading {
+            display: none;
+            margin: 15px 0;
+            color: #fff;
+            text-align: center;
+            font-weight: bold;
+        }
+        .muted {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        .file-result {
+            background: #fff7e6;
+            color: #663c00;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .link-item {
+            padding: 10px;
+            border-radius: 8px;
+            background: #f4f6f8;
+            margin-top: 8px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="matrix-bg"></div>
+
+    <div class="container">
+        <h1>Website Accessibility Check</h1>
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="Enter URL (e.g., example.com)" onkeypress="onUrlKey(event)">
+            <button id="checkButton" onclick="checkSite()">Check Site</button>
+        </div>
+        <div class="loading" id="loading">Checking site status...</div>
+        <div id="results"></div>
+        <p class="muted">Note: browser cross-origin restrictions may affect results; a successful fetch indicates reachability but some failures may be due to CORS.</p>
+    </div>
+
+    <div class="container">
+        <h1>Link Checker (فحص الروابط)</h1>
+        <div class="muted">أدخل روابط متعددة سطرًا بسطر أو ضع روابط من موقع واحد. سيتم فحص كل رابط على حدة.</div>
+        <div class="input-group" style="flex-direction:column;">
+            <textarea id="linksInput" placeholder="https://example.com/page1
+https://example.com/page2
+example.org/path"></textarea>
+            <div style="display:flex;gap:10px;width:100%;margin-top:8px;">
+                <button id="checkLinksButton" onclick="checkLinks()">Check Links</button>
+                <button onclick="pasteFromClipboard()">Paste from clipboard</button>
+            </div>
+        </div>
+        <div id="linksResults"></div>
+    </div>
+
+    <div class="container">
+        <h1>فحص الملفات لأنماط SQL (محلي)</h1>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <input type="file" id="fileInput" multiple accept=".txt,.sql,.log,.json,.js,.php,.html">
+            <button id="scanFilesButton" onclick="scanFiles()">Scan Files</button>
+        </div>
+        <div id="sqlResults"></div>
+        <p class="muted">التدقيق محلي فقط: يعتمد على أنماط نصية شائعة ولا يغني عن فحص الخادم.</p>
+    </div>
+
+    <script>
+        // Matrix background animation
+        const canvas = document.createElement('canvas');
+        canvas.id = 'matrix-canvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.zIndex = '-1';
+        canvas.style.pointerEvents = 'none';
+        document.getElementById('matrix-bg').appendChild(canvas);
+
+        function resizeMatrix() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            columns = Math.floor(canvas.width / fontSize);
+            drops.length = columns;
+            for (let i = 0; i < columns; i++) drops[i] = Math.floor(Math.random() * canvas.height / fontSize);
+        }
+        window.addEventListener('resize', resizeMatrix);
+
+        const ctx = canvas.getContext('2d');
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz@#$%^&*()';
+        const fontSize = 18;
+        let columns = Math.floor(window.innerWidth / fontSize);
+        const drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(20, 20, 20, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = fontSize + "px monospace";
+            ctx.fillStyle = '#00ff41';
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        resizeMatrix();
+        setInterval(drawMatrix, 50);
+
+        function onUrlKey(e) { if (e.key === 'Enter') checkSite(); }
+
+        // Helper: fetch with timeout using AbortController
+        async function fetchWithTimeout(resource, options = {}, timeout = 5000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const resp = await fetch(resource, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return resp;
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
+        }
+
+        async function checkSite() {
+            const urlInput = document.getElementById('urlInput');
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            const checkButton = document.getElementById('checkButton');
+
+            const raw = urlInput.value.trim();
+            if (!raw) { alert('Please enter a URL'); return; }
+
+            loadingDiv.style.display = 'block';
+            resultsDiv.innerHTML = '';
+            checkButton.disabled = true;
+
+            const start = performance.now();
+            const clean = raw.startsWith('http://') || raw.startsWith('https://') ? raw : 'https://' + raw;
+
+            try {
+                let resp;
+                try {
+                    resp = await fetchWithTimeout(clean, { mode: 'cors' }, 5000);
+                } catch (e) {
+                    resp = await fetchWithTimeout(clean, { mode: 'no-cors' }, 5000);
+                }
+
+                const end = performance.now();
+                const timeMs = (end - start).toFixed(2);
+
+                const reachable = resp && (resp.type === 'opaque' || resp.ok);
+
+                if (reachable) {
+                    resultsDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ Site is accessible<br>
+                            🕒 Response time: ${timeMs} ms
+                        </div>`;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ Site responded with an error (status: ${resp.status})<br>
+                            🕒 Time: ${timeMs} ms
+                        </div>`;
+                }
+            } catch (err) {
+                const msg = err.name === 'AbortError' ? 'Connection timed out' : err.message || 'Network error';
+                resultsDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ Site is not accessible<br>
+                        ⚠️ ${msg}
+                    </div>`;
+            } finally {
+                loadingDiv.style.display = 'none';
+                checkButton.disabled = false;
+            }
+        }
+
+        // Link checker (separate from site checker)
+        async function checkLinks() {
+            const input = document.getElementById('linksInput');
+            const resultsDiv = document.getElementById('linksResults');
+            const btn = document.getElementById('checkLinksButton');
+            resultsDiv.innerHTML = '';
+            const raw = input.value.trim();
+            if (!raw) { alert('Please enter one or more links'); return; }
+
+            const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(s => s);
+            btn.disabled = true;
+
+            const loading = document.createElement('div');
+            loading.className = 'loading';
+            loading.style.display = 'block';
+            loading.textContent = 'Checking links...';
+            resultsDiv.appendChild(loading);
+
+            const tasks = lines.map(async (ln) => {
+                const start = performance.now();
+                const url = (ln.startsWith('http://') || ln.startsWith('https://')) ? ln : 'https://' + ln;
+                try {
+                    let resp;
+                    try { resp = await fetchWithTimeout(url, { mode: 'cors' }, 5000); }
+                    catch(e) { resp = await fetchWithTimeout(url, { mode: 'no-cors' }, 5000); }
+
+                    const end = performance.now();
+                    const timeMs = (end - start).toFixed(2);
+                    const reachable = resp && (resp.type === 'opaque' || resp.ok);
+
+                    return { url, ok: reachable, status: resp && resp.status, time: timeMs, error: null };
+                } catch (err) {
+                    const msg = err.name === 'AbortError' ? 'timeout' : (err.message || 'network error');
+                    return { url, ok: false, status: null, time: null, error: msg };
+                }
+            });
+
+            try {
+                const results = await Promise.all(tasks);
+                resultsDiv.removeChild(loading);
+                results.forEach(r => {
+                    const node = document.createElement('div');
+                    node.className = 'link-item';
+                    if (r.ok) {
+                        node.innerHTML = `<strong>${escapeHtml(r.url)}</strong> — ✅ reachable (${r.time} ms)`;
+                    } else if (r.error) {
+                        node.innerHTML = `<strong>${escapeHtml(r.url)}</strong> — ❌ ${escapeHtml(r.error)}`;
+                    } else {
+                        node.innerHTML = `<strong>${escapeHtml(r.url)}</strong> — ❌ status: ${r.status}`;
+                    }
+                    resultsDiv.appendChild(node);
+                });
+            } catch (err) {
+                resultsDiv.removeChild(loading);
+                resultsDiv.innerHTML = `<div class="result error">Error checking links: ${escapeHtml(err.message || err)}</div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const input = document.getElementById('linksInput');
+                input.value = text;
+            } catch (e) {
+                alert('Cannot read clipboard: ' + (e.message || e));
+            }
+        }
+
+        // ===== shared SQL detection (kept for file scanning only) =====
+        const sqlTokens = [
+            "\\bOR\\b\\s+1=1", "\\bAND\\b\\s+1=1", "\\bUNION\\b", "\\bSELECT\\b", "\\bINSERT\\b",
+            "\\bUPDATE\\b", "\\bDELETE\\b", "\\bDROP\\b", "\\bEXEC\\b", "xp_\\w+", "--", "/\\*", "\\*/",
+            "'\\s*OR\\s*'", "'\\s*AND\\s*'", "'\\s*$", "\\b1=1\\b"
+        ];
+        const sqlRegex = new RegExp(sqlTokens.join("|"), "i");
+        const sqlPatternsReadable = [
+            "'", "--", "/*", "*/", "1=1", "OR 1=1", "AND 1=1",
+            "UNION", "SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "EXEC", "xp_"
+        ];
+
+        // Scan uploaded files for patterns (reads only the start up to a limit for performance)
+        async function scanFiles() {
+            const input = document.getElementById('fileInput');
+            const resultsDiv = document.getElementById('sqlResults');
+            resultsDiv.innerHTML = '';
+            const files = input.files;
+            if (!files || files.length === 0) {
+                alert('Please select one or more files to scan');
+                return;
+            }
+
+            const maxBytesPerFile = 200 * 1024; // read up to 200KB per file to keep fast
+            const tasks = [];
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                tasks.push(scanSingleFile(file, maxBytesPerFile));
+            }
+
+            // show loading indicator
+            const loadingNode = document.createElement('div');
+            loadingNode.className = 'loading';
+            loadingNode.textContent = 'Scanning files...';
+            loadingNode.style.display = 'block';
+            resultsDiv.appendChild(loadingNode);
+
+            try {
+                const results = await Promise.all(tasks);
+                resultsDiv.removeChild(loadingNode);
+                results.forEach(r => {
+                    const node = document.createElement('div');
+                    node.className = 'file-result';
+                    if (r.detected.length) {
+                        node.innerHTML = `<strong>${escapeHtml(r.name)}</strong> — ⚠️ ${r.detected.join(', ')}
+                            <div style="margin-top:8px"><pre>${escapeHtml(r.context)}</pre></div>`;
+                    } else {
+                        node.innerHTML = `<strong>${escapeHtml(r.name)}</strong> — ✅ no patterns found (scanned ${r.scannedBytes} bytes)`;
+                    }
+                    resultsDiv.appendChild(node);
+                });
+            } catch (err) {
+                resultsDiv.removeChild(loadingNode);
+                resultsDiv.innerHTML = `<div class="result error">Error scanning files: ${escapeHtml(err.message || err)}</div>`;
+            }
+        }
+
+        function scanSingleFile(file, maxBytes) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                const blob = file.slice(0, maxBytes);
+                reader.onload = function (e) {
+                    try {
+                        const text = e.target.result;
+                        const m = sqlRegex.exec(text);
+                        const detected = m ? sqlPatternsReadable.filter(p => text.toUpperCase().includes(p.toUpperCase())) : [];
+                        const context = m ? getSnippet(text, m.index, 120) : '';
+                        resolve({ name: file.name, detected, context, scannedBytes: Math.min(text.length, maxBytes) });
+                    } catch (err) {
+                        resolve({ name: file.name, detected: ['read-error'], context: '', scannedBytes: 0 });
+                    }
+                };
+                reader.onerror = function (e) {
+                    resolve({ name: file.name, detected: ['read-error'], context: '', scannedBytes: 0 });
+                };
+                reader.readAsText(blob, 'utf-8');
+            });
+        }
+
+        // small helper to extract context around a match
+        function getSnippet(text, index, length) {
+            const start = Math.max(0, index - Math.floor(length / 2));
+            const end = Math.min(text.length, start + length);
+            return (start > 0 ? '...' : '') + text.substring(start, end) + (end < text.length ? '...' : '');
+        }
+
+        // escape HTML for safe display
+        function escapeHtml(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
